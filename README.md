@@ -1,5 +1,6 @@
 
 # Base de donnee et analyse de partie d'echecs issues de chesscom
+## parser vos parties d'echecs .pgn
 packages dans requirements.txt
 
 mettre en place le fichier data
@@ -25,7 +26,7 @@ GRANT ALL PRIVILEGES ON SCHEMA public TO myuser;
 -- If you need to grant all privileges on the database
 GRANT ALL PRIVILEGES ON DATABASE mydatabase TO myuser;
 
-#insertion de donnees et vues
+# insertion de donnees et vues
 
 python main.py : insertion des donnees
 create_views : creer les vues des parties des 6 derniers mois
