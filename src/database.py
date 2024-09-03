@@ -1,5 +1,5 @@
 import psycopg2
-from typing import Tuple, Any
+from typing import Tuple, Any, Optional
 from .config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
 
 
@@ -35,6 +35,37 @@ def execute_script(script_path: str) -> None:
     conn.commit()
     cur.close()
     conn.close()
+
+
+def create_player_views(player_name: Optional[str] = None) -> None:
+    """
+    Create SQL views for recent games,
+    recent white games, and recent black games
+    for a specified player or for all players.
+
+    :param player_name: The name of the player to filter the views. If None, 
+    views for all players are created.
+    :type player_name: Optional[str]
+    :return: None
+    """
+    # Path to the existing SQL script template
+    script_path = 'recent_games.sql'
+    # Read the script content
+    with open(script_path, 'r') as file:
+        script_content = file.read()
+
+    # Replace placeholder with actual player name if provided
+    if player_name:
+        script_content = script_content.format(player_name=player_name)
+    else:
+        script_content = script_content.format(player_name="''")
+
+    # Write the modified script to a temporary file
+    temp_script_path = 'temp_recent_games.sql'
+    with open(temp_script_path, 'w') as file:
+        file.write(script_content)
+    # Execute the modified script from the temporary file
+    execute_script(temp_script_path)
 
 
 def insert_game(data: Tuple[Any, ...]) -> None:
