@@ -49,7 +49,7 @@ def create_player_views(player_name: Optional[str] = None) -> None:
     :return: None
     """
     # Path to the existing SQL script template
-    script_path = 'recent_games.sql'
+    script_path = './sql/recent_games.sql'
     # Read the script content
     with open(script_path, 'r') as file:
         script_content = file.read()
@@ -61,7 +61,7 @@ def create_player_views(player_name: Optional[str] = None) -> None:
         script_content = script_content.format(player_name="''")
 
     # Write the modified script to a temporary file
-    temp_script_path = 'temp_recent_games.sql'
+    temp_script_path = './sql/temp_recent_games.sql'
     with open(temp_script_path, 'w') as file:
         file.write(script_content)
     # Execute the modified script from the temporary file
