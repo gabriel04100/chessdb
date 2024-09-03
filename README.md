@@ -1,18 +1,20 @@
 
 # Base de donnee et analyse de partie d'echecs issues de chesscom
-## parser vos parties d'echecs .pgn
+## parser vos parties d'echecs .pgn pour en faire une bdd postgres
 packages dans requirements.txt
 
 mettre en place le fichier data
     games.pgn
 
 mettre en place .env
-    DB_NAME=
-    DB_USER=
-    DB_PASSWORD=
-    DB_HOST=localhost
-    DB_PORT=5432
-    PLAYER_NAME=pseudonyme
+    <ul>
+    <li>DB_NAME=</li>
+    <li>DB_USER=</li>
+    <li>DB_PASSWORD=</li>
+    <li>DB_HOST=localhost</li>
+    <li>DB_PORT=5432</li>
+    <li>PLAYER_NAME=pseudonyme</li>
+    </ul>
 
 # mise en place bdd postgress
 CREATE DATABASE your_db_name;
