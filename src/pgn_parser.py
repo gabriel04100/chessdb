@@ -33,5 +33,5 @@ def parse_pgn(pgn_data):
 def parse_moves(moves):
     move_list = moves.split()
     num_moves = len(move_list)
-    first_two_moves = ' '.join(move_list[:2]) if num_moves >= 2 else ''
-    return num_moves, first_two_moves
+    first_5_moves = ' '.join(move_list[:5]) if num_moves >= 5 else ''
+    return num_moves, first_5_moves
