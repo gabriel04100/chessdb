@@ -59,7 +59,7 @@ def get_query(player_name: str) -> str:
 
 # Application Streamlit
 def main():
-    st.title("Analyse des Résultats d'Échecs")
+    st.title("Analyse des Résultats d'Échecs au cours des 6 derniers mois")
 
     # Saisie du pseudonyme du joueur
     player_name = st.text_input("Entrez le pseudonyme du joueur:", value="gabrielpizzo") 
@@ -74,53 +74,45 @@ def main():
         st.warning(f"Aucune donnée trouvée pour le joueur {player_name}.")
         return
 
-    df['gabrielpizzo_result'] = df.apply(lambda row: determine_result(row, player_name), axis=1)
+    df['player_result'] = df.apply(lambda row: determine_result(row, player_name), axis=1)
     df[['num_moves', 'first_three_moves']] = df['moves'].apply(parse_moves).apply(pd.Series)
-    df['gabrielpizzo_color'] = df.apply(lambda row: 'White' if row['white_player'] == player_name else 'Black', axis=1)
-  
+    df['player_color'] = df.apply(lambda row: 'White' if row['white_player'] == player_name else 'Black', axis=1)
     st.write(f"Affichage des parties pour: {player_name}")
-  
     # Afficher les données
-    st.write(df)
-   
+    st.write(df) 
     # Visualisation des résultats
     st.subheader("Distribution des résultats")
-  
     if not df.empty:
         # Histogramme des résultats
         fig, ax = plt.subplots(figsize=(10, 6))
-        sns.countplot(data=df, x='gabrielpizzo_result', ax=ax, palette="Set2")
+        sns.countplot(data=df, x='player_result', ax=ax, palette="Set2")
         ax.set_title(f'Distribution des résultats pour {player_name}')
         plt.xticks(rotation=45)
-        st.pyplot(fig)
-      
+        st.pyplot(fig)  
         # Nombre de coups
         fig, ax = plt.subplots(figsize=(10, 6))
-        sns.histplot(df['num_moves'], bins=30, kde=True, ax=ax)
+        sns.histplot(df['num_moves'], bins=30, ax=ax)
         ax.set_title('Distribution du nombre de coups')
-        st.pyplot(fig)
-        
+        st.pyplot(fig)      
         # Premier coup et trois premiers coups
         fig, ax = plt.subplots(figsize=(12, 6))
         sns.countplot(data=df, x='first_three_moves', ax=ax, palette="Set2")
         ax.set_title('Distribution des trois premiers coups')
         plt.xticks(rotation=90)
-        st.pyplot(fig)
-        
+        st.pyplot(fig)   
         # Pourcentage des résultats par les trois premiers coups
-        st.subheader("Pourcentage des résultats par les trois premiers coups")
-        
+        st.subheader("Pourcentage des résultats par les trois premiers coups") 
         # Filtrer pour inclure seulement les trois premiers coups les plus courants
         top_3_moves = df['first_three_moves'].value_counts().nlargest(3).index
         df_top_3 = df[df['first_three_moves'].isin(top_3_moves)]
 
         # Calculer les pourcentages
-        df_top_3['count'] = df_top_3.groupby(['first_three_moves', 'gabrielpizzo_result'])['first_three_moves'].transform('count')
+        df_top_3['count'] = df_top_3.groupby(['first_three_moves', 'player_result'])['first_three_moves'].transform('count')
         df_top_3['percentage'] = df_top_3['count'] / df_top_3.groupby('first_three_moves')['first_three_moves'].transform('count') * 100
 
         # Préparer le graphique
         fig, ax = plt.subplots(figsize=(10, 10))
-        sns.barplot(data=df_top_3, x="first_three_moves", y="percentage", hue="gabrielpizzo_result", palette="viridis", ax=ax)
+        sns.barplot(data=df_top_3, x="first_three_moves", y="percentage", hue="player_result", palette="viridis", ax=ax)
 
         # Ajouter les pourcentages au-dessus des barres
         for p in ax.patches:
