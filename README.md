@@ -1,4 +1,19 @@
 
+# Base de donnee et analyse de partie d'echecs issues de chesscom
+
+packages dans requirements.txt
+
+mettre en place le fichier data
+    games.pgn
+
+mettre en place .env
+    DB_NAME=
+    DB_USER=
+    DB_PASSWORD=
+    DB_HOST=localhost
+    DB_PORT=5432
+
+# mise en place bdd postgress
 CREATE DATABASE your_db_name;
 
 -- Grant usage on schema public
