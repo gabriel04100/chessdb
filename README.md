@@ -1,5 +1,8 @@
 
 # Base de donnee et analyse de partie d'echecs issues de chesscom
+# Analyse avec le module streamlit
+
+![Alt text](analyse.png "Title")
 ## parser vos parties d'echecs .pgn pour en faire une bdd postgres
 packages dans requirements.txt
 
