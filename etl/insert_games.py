@@ -6,6 +6,7 @@ from src.database import insert_game
 def main():
     pgn_data = read_pgn_file('../data/games.pgn')
     games = parse_pgn(pgn_data)
+    print("tralala")
     for game in games:
         insert_game(game)
 
