@@ -11,6 +11,7 @@ from src.chessfunc import render_chessboard, parse_moves, determine_result
 from src.database import get_recent_playergames_query, load_data
 from src.visuals import *
 
+
 # Charger les variables d'environnement
 load_dotenv()
 
