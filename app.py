@@ -5,6 +5,10 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 import os
+import chess
+import chess.svg
+from src.chessfunc import render_chessboard, parse_moves, determine_result
+from src.database import get_query, load_data
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -19,42 +23,6 @@ def connect():
         host=os.getenv("DB_HOST"),
         port=os.getenv("DB_PORT")
     )
-
-
-# Charger les données depuis la base de données
-def load_data(query: str) -> pd.DataFrame:
-    conn = connect()
-    df = pd.read_sql_query(query, conn)
-    conn.close()
-    return df
-
-
-def parse_moves(moves):
-    move_list = moves.split()
-    num_moves = len(move_list)
-    first_n_moves = ' '.join(move_list[:3]) if num_moves >= 3 else ''
-    return num_moves, first_n_moves
-
-
-# Column to indicate if the player won or drew the game
-def determine_result(row, player_name):
-    if row['white_player'] == player_name and row['result'] == "1-0":
-        return "Win"
-    elif row['black_player'] == player_name and row['result'] == "0-1":
-        return "Win"
-    elif row['result'] == "1/2-1/2":
-        return "Draw"
-    else:
-        return "Loss"
-
-
-# Définir les requêtes SQL avec le pseudonyme du joueur
-def get_query(player_name: str) -> str:
-    return f"""
-    SELECT * FROM chess_games
-    WHERE date >= (CURRENT_DATE - INTERVAL '6 months')
-    AND (white_player = '{player_name}' OR black_player = '{player_name}');
-    """
 
 
 # Application Streamlit
@@ -79,7 +47,24 @@ def main():
     df['player_color'] = df.apply(lambda row: 'White' if row['white_player'] == player_name else 'Black', axis=1)
     st.write(f"Affichage des parties pour: {player_name}")
     # Afficher les données
-    st.write(df) 
+    st.write(df)
+    # Sélectionner une partie pour afficher l'échiquier
+    st.subheader("Visualiser une partie")
+    game_index = st.selectbox("Sélectionnez une partie", df.index)
+
+    if game_index is not None:
+        selected_game = df.loc[game_index]
+        st.write(f"Partie sélectionnée: {selected_game['white_player']} vs {selected_game['black_player']}")  
+        # Initialiser le board et les mouvements
+        moves = selected_game['moves'].split()
+        board = chess.Board() 
+        move_num = st.slider("Déplacez-vous dans les coups de la partie", 0, len(moves), 0)   
+        # Appliquer les mouvements jusqu'à la position actuelle
+        for move in moves[:move_num]:
+            board.push(chess.Move.from_uci(move))
+
+        # Afficher l'échiquier
+        st.image(render_chessboard(board), use_column_width=True) 
     # Visualisation des résultats
     st.subheader("Distribution des résultats")
     if not df.empty:

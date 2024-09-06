@@ -1,6 +1,7 @@
 import psycopg2
 from typing import Tuple, Any, Optional
 from .config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+import pandas as pd
 
 
 def connect() -> psycopg2.extensions.connection:
@@ -88,3 +89,20 @@ def insert_game(data: Tuple[Any, ...]) -> None:
     conn.commit()
     cur.close()
     conn.close()
+
+
+# Charger les données depuis la base de données
+def load_data(query: str) -> pd.DataFrame:
+    conn = connect()
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    return df
+
+
+# Définir les requêtes SQL avec le pseudonyme du joueur
+def get_query(player_name: str) -> str:
+    return f"""
+    SELECT * FROM chess_games
+    WHERE date >= (CURRENT_DATE - INTERVAL '6 months')
+    AND (white_player = '{player_name}' OR black_player = '{player_name}');
+    """
