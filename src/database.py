@@ -100,7 +100,7 @@ def load_data(query: str) -> pd.DataFrame:
 
 
 # Définir les requêtes SQL avec le pseudonyme du joueur
-def get_query(player_name: str) -> str:
+def get_recent_playergames_query(player_name: str) -> str:
     return f"""
     SELECT * FROM chess_games
     WHERE date >= (CURRENT_DATE - INTERVAL '6 months')

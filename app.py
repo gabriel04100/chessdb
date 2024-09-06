@@ -8,7 +8,7 @@ import os
 import chess
 import chess.svg
 from src.chessfunc import render_chessboard, parse_moves, determine_result
-from src.database import get_query, load_data
+from src.database import get_recent_playergames_query, load_data
 from src.visuals import *
 
 # Charger les variables d'environnement
@@ -37,7 +37,7 @@ def main():
         return
 
     # Charger les données
-    query = get_query(player_name)
+    query = get_recent_playergames_query(player_name)
     df = load_data(query) 
     if df.empty:
         st.warning(f"Aucune donnée trouvée pour le joueur {player_name}.")
