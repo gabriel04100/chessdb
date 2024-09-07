@@ -8,6 +8,7 @@ def histogram_player_results(player_name, df):
     sns.countplot(data=df, x='player_result', ax=ax)
     ax.set_title(f'Distribution des résultats pour {player_name}')
     plt.xticks(rotation=45)
+    plt.grid()
     return fig
 
 
@@ -16,6 +17,7 @@ def mooves_number_hist(df):
     fig, ax = plt.subplots(figsize=(10, 6))
     sns.histplot(df['num_moves'], bins=30, ax=ax)
     ax.set_title('Distribution du nombre de coups')
+    plt.grid()
     return fig
 
 
@@ -25,6 +27,7 @@ def first_three_mooves_count(df):
     sns.countplot(data=df, x='first_three_moves', ax=ax)
     ax.set_title('Distribution des trois premiers coups')
     plt.xticks(rotation=90)
+    plt.grid()
     return fig
 
 

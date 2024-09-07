@@ -8,13 +8,12 @@ import os
 import chess
 import chess.svg
 from src.chessfunc import render_chessboard, parse_moves, determine_result
-from src.database import get_recent_playergames_query, load_data
+from src.database import *
 from src.visuals import *
 
 
 # Charger les variables d'environnement
 load_dotenv()
-
 
 # Connexion à la base de données
 def connect():
@@ -29,7 +28,7 @@ def connect():
 
 # Application Streamlit
 def main():
-    st.title("Analyse des Résultats d'Échecs au cours des 6 derniers mois")
+    st.title("Analyse des Résultats d'Échecs")
 
     # Saisie du pseudonyme du joueur
     player_name = st.text_input("Entrez le pseudonyme du joueur:", value="gabrielpizzo") 
@@ -38,8 +37,11 @@ def main():
         return
 
     # Charger les données
-    query = get_recent_playergames_query(player_name)
-    df = load_data(query) 
+    piece_selector = st.selectbox("Pièces blanches noires ou toutes parties ?",
+                 ("blanc","noir","toutes pièces"))
+    query = get_playergames_query(player_name,piece_selector)
+    df = load_data(query)
+    df=df.set_index("id")
     if df.empty:
         st.warning(f"Aucune donnée trouvée pour le joueur {player_name}.")
         return

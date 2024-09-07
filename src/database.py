@@ -106,3 +106,21 @@ def get_recent_playergames_query(player_name: str) -> str:
     WHERE date >= (CURRENT_DATE - INTERVAL '6 months')
     AND (white_player = '{player_name}' OR black_player = '{player_name}');
     """
+
+
+def get_playergames_query(player_name:str, piece_selector:str=None) ->str:
+    if piece_selector=="noir":
+        return f"""
+        SELECT * FROM chess_games
+        WHERE (black_player = '{player_name}');
+        """
+    elif piece_selector=="blanc":
+        return f"""
+        SELECT * FROM chess_games
+        WHERE (white_player = '{player_name}');
+        """      
+    else:
+        return f"""
+        SELECT * FROM chess_games
+        WHERE (white_player = '{player_name}' OR black_player = '{player_name}');
+        """
