@@ -3,10 +3,17 @@ import pandas as pd
 from datetime import datetime, timedelta
 import logging
 from dotenv import load_dotenv
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import requests
 import time
 import random
+from typing import Tuple, Any, List, Dict
+from io import StringIO
+import chess.pgn
+from src.utils import read_pgn_file
+from src.pgn_parser import parse_pgn
 
 # Load environment variables
 load_dotenv()
@@ -36,9 +43,32 @@ def connect() -> psycopg2.extensions.connection:
         port=DB_PORT
     )
 
-def fetch_new_games(username: str) -> pd.DataFrame:
+
+def get_games_for_month(username: str, year: str, month: str) -> List[str]:
     """
-    Fetch games from Chess.com API for the last two months.
+    Fetch the PGN data for games of a specific player for a given month.
+    """
+    url = f'https://api.chess.com/pub/player/{username}/games/{year}/{month}'
+    headers = {'User-Agent': EMAIL}
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        return response.json().get('games', [])
+    elif response.status_code == 429:
+        # Rate limit error, apply exponential backoff
+        wait_time = 2 ** (attempt + 1) + random.uniform(0, 1)  # Random jitter
+        logging.warning(f"Rate limited. Waiting for {wait_time:.2f} seconds before retrying...")
+        time.sleep(wait_time)
+        return get_games_for_month(username, year, month)  # Retry
+    elif response.status_code == 403:
+        raise Exception(f"Access forbidden for {username}. Status code: 403")
+    else:
+        raise Exception(f"Failed to fetch games for {username} in {year}/{month}. Status code: {response.status_code}")
+
+
+def fetch_games_for_last_two_months(username: str) -> List[Tuple[Any, ...]]:
+    """
+    Fetch and parse games for the player from the last two months.
     """
     end_date = datetime.utcnow()
     start_date = end_date - timedelta(days=60)
@@ -47,64 +77,28 @@ def fetch_new_games(username: str) -> pd.DataFrame:
     end_date_str = end_date.strftime('%Y/%m')
     start_date_str = start_date.strftime('%Y/%m')
 
-    # Get archives for the player
-    def get_game_archives(username: str) -> list:
-        url = f"https://api.chess.com/pub/player/{username}/games/archives"
-        headers = {'User-Agent': EMAIL}
-        
-        for attempt in range(5):  # Retry logic
-            response = requests.get(url, headers=headers)
-            if response.status_code == 200:
-                return response.json()["archives"]
-            elif response.status_code == 429:
-                wait_time = 2 ** attempt + random.uniform(0, 1)
-                time.sleep(wait_time)
-            else:
-                raise Exception(f"Failed to fetch archives: {response.status_code}")
-        raise Exception("Max retries reached")
+    all_games = []
 
-    def get_games_for_month(username: str, year: str, month: str) -> list:
-        url = f"https://api.chess.com/pub/player/{username}/games/{year}/{month}"
-        response = requests.get(url)
-        if response.status_code == 200:
-            return response.json().get('games', [])
-        else:
-            raise Exception(f"Failed to fetch games: {response.status_code}")
+    current_date = start_date
+    while current_date <= end_date:
+        year_month = current_date.strftime('%Y/%m')
+        if start_date_str <= year_month <= end_date_str:
+            games = get_games_for_month(username, current_date.strftime('%Y'), current_date.strftime('%m'))
+            for game in games:
+                pgn_data = game.get('pgn', '')
+                all_games.extend(parse_pgn(pgn_data))
+        current_date += timedelta(days=31)  # Move to the next month
+    
+    return all_games
 
-    # Fetch game archives
-    archives = get_game_archives(username)
-    games = []
 
-    for archive in archives:
-        year, month = archive.split('/')[-2:]
-        if (year + '/' + month) >= start_date_str and (year + '/' + month) <= end_date_str:
-            games.extend(get_games_for_month(username, year, month))
-
-    # Convert games to DataFrame
-    game_records = []
-    for game in games:
-        game_records.append({
-            'event': game.get('tournament', 'N/A'),
-            'site': game.get('url', 'N/A'),
-            'date': datetime.utcfromtimestamp(game['end_time']).strftime('%Y-%m-%d'),
-            'round': '1',  # Placeholder
-            'white_player': game['white']['username'],
-            'black_player': game['black']['username'],
-            'result': game['result'],
-            'white_elo': game['white']['rating'],
-            'black_elo': game['black']['rating'],
-            'time_control': game.get('time_control', 'N/A'),
-            'end_time': datetime.utcfromtimestamp(game['end_time']).strftime('%Y-%m-%d %H:%M:%S'),
-            'termination': game.get('termination', 'N/A'),
-            'moves': game.get('pgn', 'N/A')
-        })
-
-    df = pd.DataFrame(game_records)
-    return df
-
-def insert_game(data: tuple) -> None:
+def insert_game(data: Tuple[Any, ...]) -> None:
     """
-    Insert a single game record into the chess_games table.
+    Insert a chess game record into the chess_games table.
+
+    :param data: A tuple containing the game data to be inserted. The order of the elements should match the columns in the chess_games table.
+    :type data: Tuple[Any, ...]
+    :return: None
     """
     conn = connect()
     cur = conn.cursor()
@@ -123,6 +117,7 @@ def insert_game(data: tuple) -> None:
         cur.close()
         conn.close()
 
+
 def main():
     """
     Main function to fetch and insert new games.
@@ -134,25 +129,21 @@ def main():
     
     try:
         logging.info("Starting the script.")
-        new_games = fetch_new_games(username)
+        new_games = fetch_games_for_last_two_months(username)
+
         conn = connect()
         cur = conn.cursor()
         cur.execute("SELECT id FROM chess_games")
         existing_ids = set(row[0] for row in cur.fetchall())
         conn.close()
 
-        for index, row in new_games.iterrows():
-            if row['id'] not in existing_ids:
-                data = (
-                    row['event'], row['site'], row['date'], row['round'],
-                    row['white_player'], row['black_player'], row['result'],
-                    row['white_elo'], row['black_elo'], row['time_control'],
-                    row['end_time'], row['termination'], row['moves']
-                )
-                insert_game(data)
+        for game_data in new_games:
+            if game_data[0] not in existing_ids:
+                insert_game(game_data)
         logging.info("Script completed successfully.")
     except Exception as e:
         logging.error(f"An error occurred: {e}")
+
 
 if __name__ == "__main__":
     main()
