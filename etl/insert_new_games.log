@@ -15,3 +15,5 @@ LINE 5: ... SELECT 1 FROM chess_games WHERE chess_games.id = new_games....
 2024-09-07 17:37:16,716 - INFO - Script completed successfully.
 2024-09-07 17:40:00,187 - INFO - Starting the script.
 2024-09-07 17:40:00,279 - INFO - Script completed successfully.
+2024-09-07 17:44:02,838 - INFO - Starting the script.
+2024-09-07 17:44:03,334 - ERROR - An error occurred: Failed to fetch games: 403
