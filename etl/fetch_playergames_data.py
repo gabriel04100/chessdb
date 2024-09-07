@@ -32,13 +32,14 @@ def connect() -> psycopg2.extensions.connection:
 
 def fetch_new_games() -> pd.DataFrame:
     """
-    Fetch games from the last month that are not already in the database.
+    Fetch games from the last two months that are not already in the database.
     """
     conn = connect()
-    query = """
+    two_months_ago = datetime.now() - timedelta(days=60)  # Approximate 2 months
+    query = f"""
     WITH recent_games AS (
         SELECT * FROM chess_games
-        WHERE date >= (CURRENT_DATE - INTERVAL '1 month')
+        WHERE date >= '{two_months_ago.strftime('%Y-%m-%d')}'
     )
     SELECT r.*
     FROM recent_games r
@@ -49,7 +50,6 @@ def fetch_new_games() -> pd.DataFrame:
     df = pd.read_sql_query(query, conn)
     conn.close()
     return df
-
 
 def insert_game(data: tuple) -> None:
     """
@@ -93,107 +93,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-import sys
-import os
-import random
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import requests
-from typing import Tuple, Any, List
-from src.database import insert_game, connect 
-import time
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Get email address from environment variables
-EMAIL = os.getenv('CHESSCOM_EMAIL')
-
-
-def get_game_archives(username: str, max_retries: int = 5) -> List[str]:
-    """
-    Fetch the list of available game archives for a Chess.com player, with retries and rate-limiting handling.
-    
-    :param username: Chess.com username of the player
-    :type username: str
-    :param max_retries: Maximum number of retries in case of failure (default is 5)
-    :type max_retries: int
-    :return: List of archive URLs
-    :rtype: list
-    """
-    url = f"https://api.chess.com/pub/player/{username}/games/archives"
-    headers = {'User-Agent': EMAIL}
-
-    for attempt in range(max_retries):
-        response = requests.get(url, headers=headers)
-
-        if response.status_code == 200:
-            return response.json()["archives"]
-        elif response.status_code == 429:
-            # Rate limit error, apply exponential backoff
-            wait_time = 2 ** attempt + random.uniform(0, 1)  # Random jitter
-            print(f"Rate limited. Waiting for {wait_time:.2f} seconds before retrying...")
-            time.sleep(wait_time)
-        elif response.status_code == 403:
-            raise Exception(f"Access forbidden for {username}. Status code: 403")
-        else:
-            raise Exception(f"Failed to fetch archives for {username}. Status code: {response.status_code}")
-
-    raise Exception(f"Max retries reached. Failed to fetch archives for {username}")
-
-
-
-def get_games_for_month(username: str, year: str, month: str):
-    """
-    Fetch the games for a specific player for a given month.
-    """
-    url = f'https://api.chess.com/pub/player/{username}/games/{year}/{month}'
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json()['games']
-    else:
-        raise Exception(f"Failed to fetch games for {username} in {year}/{month}. Status code: {response.status_code}")
-
-
-def prepare_game_data(game: dict) -> Tuple[Any, ...]:
-    """
-    Prepare a single game tuple to be inserted into the database.
-    """
-    return (
-        game.get('tournament', 'N/A'),  # Event
-        game.get('url', 'N/A'),  # Site
-        time.strftime('%Y-%m-%d', time.gmtime(game['end_time'])),  # Date (converted from UNIX timestamp)
-        '1',  # Round (use '1' as placeholder)
-        game['white']['username'],  # White player
-        game['black']['username'],  # Black player
-        game['result'],  # Result
-        game['white']['rating'],  # White Elo
-        game['black']['rating'],  # Black Elo
-        game.get('time_control', 'N/A'),  # Time control
-        time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(game['end_time'])),  # End time
-        game.get('termination', 'N/A'),  # Termination
-        game.get('pgn', 'N/A')  # PGN moves
-    )
-
-
-def fetch_and_insert_games(username: str):
-    """
-    Fetch games for a player and insert them into the database.
-    """
-    # Get the game archives (months where games exist)
-    archives = get_game_archives(username)
-    
-    # For each archive, fetch games and insert them
-    for archive in archives:
-        year, month = archive.split('/')[-2:]
-        games = get_games_for_month(username, year, month)
-
-        for game in games:
-            game_data = prepare_game_data(game)
-            insert_game(game_data)
-
-
-if __name__ == '__main__':
-    username = str(os.getenv('PLAYER_NAME'))
-    fetch_and_insert_games(username)
 
