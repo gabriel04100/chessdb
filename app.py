@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import os
 import chess
 import chess.svg
+from src.database import connect
 from src.chessfunc import render_chessboard, parse_moves, determine_result
 from src.database import *
 from src.visuals import *
@@ -14,16 +15,6 @@ from src.visuals import *
 
 # Charger les variables d'environnement
 load_dotenv()
-
-# Connexion à la base de données
-def connect():
-    return psycopg2.connect(
-        dbname=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT")
-    )
 
 
 # Application Streamlit
