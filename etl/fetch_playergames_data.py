@@ -14,6 +14,7 @@ from io import StringIO
 import chess.pgn
 from src.utils import read_pgn_file
 from src.pgn_parser import parse_pgn
+from src.database import connect, insert_game
 
 # Load environment variables
 load_dotenv()
@@ -30,18 +31,6 @@ EMAIL = os.getenv('CHESSCOM_EMAIL')
 
 # Configure logging
 logging.basicConfig(filename='insert_new_games.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-def connect() -> psycopg2.extensions.connection:
-    """
-    Establish a connection to the PostgreSQL database.
-    """
-    return psycopg2.connect(
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        host=DB_HOST,
-        port=DB_PORT
-    )
 
 
 def get_games_for_month(username: str, year: str, month: str) -> List[str]:
@@ -90,32 +79,6 @@ def fetch_games_for_last_two_months(username: str) -> List[Tuple[Any, ...]]:
         current_date += timedelta(days=31)  # Move to the next month
     
     return all_games
-
-
-def insert_game(data: Tuple[Any, ...]) -> None:
-    """
-    Insert a chess game record into the chess_games table.
-
-    :param data: A tuple containing the game data to be inserted. The order of the elements should match the columns in the chess_games table.
-    :type data: Tuple[Any, ...]
-    :return: None
-    """
-    conn = connect()
-    cur = conn.cursor()
-    query = """
-    INSERT INTO chess_games (
-        event, site, date, round, white_player, black_player, result, 
-        white_elo, black_elo, time_control, end_time, termination, moves
-    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """
-    try:
-        cur.execute(query, data)
-        conn.commit()
-    except Exception as e:
-        logging.error(f"Error inserting game: {e}")
-    finally:
-        cur.close()
-        conn.close()
 
 
 def main():
