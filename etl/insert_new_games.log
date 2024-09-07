@@ -1,0 +1,13 @@
+2024-09-07 17:27:16,199 - INFO - Starting the script.
+2024-09-07 17:27:16,289 - ERROR - An error occurred: Execution failed on sql '
+    SELECT * FROM chess_games
+    WHERE date >= (CURRENT_DATE - INTERVAL '1 month')
+    AND NOT EXISTS (
+        SELECT 1 FROM chess_games WHERE chess_games.id = new_games.id
+    )
+    ': ERREUR:  entrée manquante de la clause FROM pour la table « new_games »
+LINE 5: ... SELECT 1 FROM chess_games WHERE chess_games.id = new_games....
+                                                             ^
+
+2024-09-07 17:28:49,781 - INFO - Starting the script.
+2024-09-07 17:28:49,873 - INFO - Script completed successfully.

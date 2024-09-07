@@ -1,0 +1,1 @@
+DROP TABLE chess_games CASCADE;
