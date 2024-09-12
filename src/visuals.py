@@ -45,14 +45,6 @@ def most_frequent_first_mooves(df):
     fig, ax = plt.subplots(figsize=(10, 10))
     sns.barplot(data=df_top_3, x="first_three_moves",
                 y="percentage", hue="player_result", palette="viridis", ax=ax)
-
-    # Ajouter les pourcentages au-dessus des barres
-    for p in ax.patches:
-        height = p.get_height()
-        ax.annotate(f'{height:.1f}%', (p.get_x() + p.get_width() / 2., height),
-                    ha='center', va='bottom', fontsize=12)
-
-    ax.set_title("Pourcentage des Résultats par les Trois Premiers Coups")
     ax.set_ylabel("Pourcentage (%)")
     ax.set_xlabel("Trois Premiers Coups")
     ax.grid()
